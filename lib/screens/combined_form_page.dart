@@ -282,7 +282,7 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
       }
 
       final response = await http.get(
-        Uri.parse('http://192.168.0.184:8000/api/permission/history'),
+        Uri.parse('http://192.168.0.184:8000/api/permission'),
         headers: {
           'Accept': 'application/json',
           'Authorization': 'Bearer $userToken',
