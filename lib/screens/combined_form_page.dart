@@ -416,149 +416,199 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
     );
   }
 
-  // Widget untuk menampilkan riwayat pengajuan
-  Widget _buildSubmissionHistory() {
-    if (_isLoading) {
-      return Center(child: CircularProgressIndicator());
-    }
+ // Ganti bagian _buildSubmissionHistory() di Flutter dengan kode berikut:
 
-    if (_submissionHistory.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.history,
-              size: 64,
-              color: Colors.grey,
-            ),
-            SizedBox(height: 16),
-            Text(
-              "Belum ada riwayat pengajuan",
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade700,
-              ),
-            ),
-            SizedBox(height: 24),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _showHistory = false;
-                  _showForm = false;
-                });
-              },
-              child: Text("Kembali"),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.blue.shade600,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+Widget _buildSubmissionHistory() {
+  if (_isLoading) {
+    return Center(child: CircularProgressIndicator());
+  }
 
-    return Column(
-      children: [
-        Padding(
-          padding: EdgeInsets.all(16),
-          child: Row(
-            children: [
-              IconButton(
-                icon: Icon(Icons.arrow_back),
-                onPressed: () {
-                  setState(() {
-                    _showHistory = false;
-                    _showForm = false;
-                  });
-                },
-              ),
-              Text(
-                "Riwayat Pengajuan",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+  if (_submissionHistory.isEmpty) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.history,
+            size: 64,
+            color: Colors.grey,
           ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            padding: EdgeInsets.all(16),
-            itemCount: _submissionHistory.length,
-            itemBuilder: (context, index) {
-              final submission = _submissionHistory[index];
-              return Card(
-                margin: EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  contentPadding: EdgeInsets.all(16),
-                  title: Text(
-                    submission['type']?.toString().toUpperCase() ?? 'Unknown',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.blue.shade800,
-                    ),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: 8),
-                      Text('Tanggal: ${submission['date'] ?? 'N/A'}'),
-                      Text('Status: ${submission['status'] ?? 'N/A'}'),
-                      if (submission['reason'] != null)
-                        Text('Alasan: ${submission['reason']}'),
-                    ],
-                  ),
-                  leading: Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(submission['status']),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      _getStatusIcon(submission['status']),
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              );
+          SizedBox(height: 16),
+          Text(
+            "Belum ada riwayat pengajuan",
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          SizedBox(height: 24),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _showHistory = false;
+                _showForm = false;
+              });
             },
+            child: Text("Kembali"),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.blue.shade600,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  // Helper untuk warna status
-  Color _getStatusColor(String? status) {
-    switch (status?.toLowerCase()) {
-      case 'approved':
-        return Colors.green;
-      case 'pending':
-        return Colors.orange;
-      case 'rejected':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
+  return ListView.builder(
+    padding: EdgeInsets.all(16),
+    itemCount: _submissionHistory.length,
+    itemBuilder: (context, index) {
+      final submission = _submissionHistory[index];
+      
+      // Format tanggal dari string "YYYY-MM-DD" ke "DD MMMM YYYY"
+      String formattedDate = 'N/A';
+      if (submission['tanggal'] != null) {
+        try {
+          final date = DateTime.parse(submission['tanggal']);
+          formattedDate = "${date.day} ${_getMonthName(date.month)} ${date.year}";
+        } catch (e) {
+          print('Error parsing date: $e');
+        }
+      }
 
-  // Helper untuk icon status
-  IconData _getStatusIcon(String? status) {
-    switch (status?.toLowerCase()) {
-      case 'approved':
-        return Icons.check_circle;
-      case 'pending':
-        return Icons.access_time;
-      case 'rejected':
-        return Icons.cancel;
-      default:
-        return Icons.help;
-    }
+      // FIXED: Status mapping yang benar sesuai dengan backend PHP
+      String status = submission['status']?.toString() ?? '';
+      String statusIndo = '';
+      Color statusColor = Colors.grey;
+      IconData statusIcon = Icons.help;
+      
+      switch (status) {
+        case 'Menunggu':
+          statusIndo = 'Menunggu';
+          statusColor = Colors.orange;
+          statusIcon = Icons.access_time;
+          break;
+        case 'Disetujui':
+          statusIndo = 'Disetujui';
+          statusColor = Colors.green;
+          statusIcon = Icons.check_circle;
+          break;
+        case 'Ditolak':
+          statusIndo = 'Ditolak';
+          statusColor = Colors.red;
+          statusIcon = Icons.cancel;
+          break;
+        default:
+          statusIndo = 'Menunggu';
+          statusColor = Colors.orange;
+          statusIcon = Icons.access_time;
+      }
+
+      return Card(
+        margin: EdgeInsets.only(bottom: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Container(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade100,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      submission['type']?.toString().toUpperCase() ?? 'Unknown',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blue.shade800,
+                      ),
+                    ),
+                  ),
+                  Spacer(),
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      statusIcon,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12),
+              Text(
+                'Tanggal: $formattedDate',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              SizedBox(height: 4),
+              Row(
+                children: [
+                  Text(
+                    'Status: ',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: statusColor.withOpacity(0.3)),
+                    ),
+                    child: Text(
+                      statusIndo,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: statusColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (submission['alasan'] != null) ...[
+                SizedBox(height: 4),
+                Text(
+                  'Alasan: ${submission['alasan']}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+// HAPUS method helper yang lama dan ganti dengan yang baru:
+// Hapus _getStatusColor() dan _getStatusIcon() method yang lama
+
+  // Helper untuk mendapatkan nama bulan
+  String _getMonthName(int month) {
+    const months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    return months[month - 1];
   }
 
   // Widget untuk form izin
