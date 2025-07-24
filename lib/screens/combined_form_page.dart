@@ -4,6 +4,10 @@ import '../utils/page_transition.dart';
 import '../utils/user_data.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
+import 'package:path/path.dart' as path;
+import 'package:url_launcher/url_launcher.dart';
 
 class CombinedFormPage extends StatefulWidget {
   @override
@@ -32,6 +36,11 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
 
   // List untuk menyimpan riwayat pengajuan
   List<Map<String, dynamic>> _submissionHistory = [];
+
+  // Tambahkan variabel untuk attachment
+  File? _selectedFile;
+  String? _fileName;
+  bool _isUploading = false;
 
   @override
   void initState() {
@@ -137,11 +146,45 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
     return _selectedEndDate!.difference(_selectedDate!).inDays + 1;
   }
 
+  // Fungsi untuk memilih file
+  Future<void> _pickFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],
+      );
+
+      if (result != null) {
+        setState(() {
+          _selectedFile = File(result.files.single.path!);
+          _fileName = path.basename(_selectedFile!.path);
+        });
+      }
+    } catch (e) {
+      print('Error picking file: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memilih file'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Fungsi untuk menghapus file yang dipilih
+  void _removeFile() {
+    setState(() {
+      _selectedFile = null;
+      _fileName = null;
+    });
+  }
+
   // Fungsi untuk submit form
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
+        _isUploading = true;
       });
       
       try {
@@ -163,16 +206,37 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
         }
         
         // Kirim data ke API dengan endpoint yang sesuai PermissionController
-        final response = await http.post(
-          Uri.parse('http://192.168.0.184:8000/api/permission/$_selectedFormType'),
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $userToken',
-          },
-          body: jsonEncode(formData),
-        );
+        var uri = Uri.parse('http://192.168.0.184:8000/api/permission/$_selectedFormType');
+        var request = http.MultipartRequest('POST', uri);
         
+        // Tambahkan headers
+        request.headers.addAll({
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $userToken',
+        });
+
+        // Tambahkan fields
+        request.fields['tanggal'] = _tanggalController.text;
+        request.fields['alasan'] = _alasanController.text;
+        if (_selectedFormType == 'cuti') {
+          request.fields['tanggal_berakhir'] = _tanggalBerakhirController.text;
+        }
+
+        // Tambahkan file jika ada
+        if (_selectedFile != null) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'file',
+              _selectedFile!.path,
+              filename: _fileName,
+            ),
+          );
+        }
+
+        // Kirim request
+        var streamedResponse = await request.send();
+        var response = await http.Response.fromStream(streamedResponse);
+
         if (response.statusCode == 200 || response.statusCode == 201) {
           final jsonResponse = jsonDecode(response.body);
           
@@ -188,8 +252,6 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
               successMessage = 'Pengajuan lembur berhasil dikirim!';
               break;
           }
-          
-          print('Response data: ${jsonResponse['message']}');
           
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -238,6 +300,7 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
       } finally {
         setState(() {
           _isLoading = false;
+          _isUploading = false;
         });
       }
     }
@@ -252,6 +315,8 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
     setState(() {
       _selectedDate = null;
       _selectedEndDate = null;
+      _selectedFile = null;
+      _fileName = null;
     });
   }
 
@@ -591,6 +656,36 @@ Widget _buildSubmissionHistory() {
                   ),
                 ),
               ],
+
+              // Tambahkan bagian attachment jika ada
+              if (submission['attachment_url'] != null) ...[
+                SizedBox(height: 12),
+                InkWell(
+                  onTap: () => _downloadAttachment(submission['attachment_url']),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.attach_file, size: 20, color: Colors.blue.shade700),
+                        SizedBox(width: 8),
+                        Text(
+                          'Lihat Lampiran',
+                          style: TextStyle(
+                            color: Colors.blue.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -658,6 +753,8 @@ Widget _buildSubmissionHistory() {
           ),
           validator: (value) => value!.isEmpty ? 'Alasan wajib diisi' : null,
         ),
+        SizedBox(height: 20),
+        _buildFileInput(),
       ],
     );
   }
@@ -752,6 +849,8 @@ Widget _buildSubmissionHistory() {
           ),
           validator: (value) => value!.isEmpty ? 'Alasan wajib diisi' : null,
         ),
+        SizedBox(height: 20),
+        _buildFileInput(),
       ],
     );
   }
@@ -803,8 +902,118 @@ Widget _buildSubmissionHistory() {
           ),
           validator: (value) => value!.isEmpty ? 'Alasan wajib diisi' : null,
         ),
+        SizedBox(height: 20),
+        _buildFileInput(),
       ],
     );
+  }
+
+  // Widget untuk menampilkan input file
+  Widget _buildFileInput() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Lampiran",
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.blue.shade800,
+          ),
+        ),
+        SizedBox(height: 8),
+        if (_selectedFile == null)
+          InkWell(
+            onTap: _pickFile,
+            child: Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.blue.shade200),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.attach_file, color: Colors.blue.shade600),
+                  SizedBox(width: 12),
+                  Text(
+                    "Pilih File",
+                    style: TextStyle(
+                      color: Colors.blue.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blue.shade100),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _getFileIcon(_fileName ?? ''),
+                  color: Colors.blue.shade700,
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _fileName ?? 'File terpilih',
+                    style: TextStyle(color: Colors.blue.shade700),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.close, color: Colors.red),
+                  onPressed: _removeFile,
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  // Helper untuk mendapatkan icon file
+  IconData _getFileIcon(String fileName) {
+    String ext = fileName.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'doc':
+      case 'docx':
+        return Icons.description;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+        return Icons.image;
+      default:
+        return Icons.insert_drive_file;
+    }
+  }
+
+  // Fungsi untuk mendownload atau membuka attachment
+  Future<void> _downloadAttachment(String url) async {
+    try {
+      if (await canLaunch(url)) {
+        await launch(url);
+      } else {
+        throw 'Tidak dapat membuka file';
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal membuka file: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
