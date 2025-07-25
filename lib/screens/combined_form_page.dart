@@ -155,6 +155,28 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
       );
 
       if (result != null) {
+        // Cek ukuran file (maksimum 2MB)
+        if (result.files.single.size > 2 * 1024 * 1024) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.white),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text('Ukuran file melebihi batas maksimum (2MB)'),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.orange.shade700,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              margin: EdgeInsets.all(10),
+            ),
+          );
+          return;
+        }
+
         setState(() {
           _selectedFile = File(result.files.single.path!);
           _fileName = path.basename(_selectedFile!.path);
@@ -164,8 +186,19 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
       print('Error picking file: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal memilih file'),
-          backgroundColor: Colors.red,
+          content: Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.white),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Gagal memilih file: Format file tidak didukung'),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.red.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          margin: EdgeInsets.all(10),
         ),
       );
     }
@@ -658,10 +691,10 @@ Widget _buildSubmissionHistory() {
               ],
 
               // Tambahkan bagian attachment jika ada
-              if (submission['attachment_url'] != null) ...[
+              if (submission['file_path'] != null) ...[
                 SizedBox(height: 12),
                 InkWell(
-                  onTap: () => _downloadAttachment(submission['attachment_url']),
+                  onTap: () => _downloadAttachment(submission['file_path']),
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
@@ -912,16 +945,72 @@ Widget _buildSubmissionHistory() {
   Widget _buildFileInput() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Lampiran",
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.blue.shade800,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Text(
+              "Lampiran",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.blue.shade800,
+              ),
+            ),
+            SizedBox(width: 8),
+            Text(
+              "(Opsional)",
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 6),
+        Container(
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.blue.shade100),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Icon(Icons.info_outline, size: 16, color: Colors.blue.shade700),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Format yang didukung: JPG, JPEG, PNG, PDF, DOC, DOCX",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 4),
+              Row(
+                children: <Widget>[
+                  Icon(Icons.warning_amber_rounded, size: 16, color: Colors.orange.shade700),
+                  SizedBox(width: 8),
+                  Text(
+                    "Maksimum ukuran file: 2MB",
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.orange.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-        SizedBox(height: 8),
+        SizedBox(height: 12),
         if (_selectedFile == null)
           InkWell(
             onTap: _pickFile,
@@ -932,7 +1021,7 @@ Widget _buildSubmissionHistory() {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
-                children: [
+                children: <Widget>[
                   Icon(Icons.attach_file, color: Colors.blue.shade600),
                   SizedBox(width: 12),
                   Text(
@@ -955,7 +1044,7 @@ Widget _buildSubmissionHistory() {
               border: Border.all(color: Colors.blue.shade100),
             ),
             child: Row(
-              children: [
+              children: <Widget>[
                 Icon(
                   _getFileIcon(_fileName ?? ''),
                   color: Colors.blue.shade700,
@@ -1001,10 +1090,97 @@ Widget _buildSubmissionHistory() {
   // Fungsi untuk mendownload atau membuka attachment
   Future<void> _downloadAttachment(String url) async {
     try {
-      if (await canLaunch(url)) {
-        await launch(url);
+      // Hapus prefix 'izin-files/' dari url
+      String cleanUrl = url.replaceAll('izin-files/', '');
+      
+      // Cek apakah file adalah gambar berdasarkan ekstensi
+      bool isImage = cleanUrl.toLowerCase().endsWith('.jpg') || 
+                    cleanUrl.toLowerCase().endsWith('.jpeg') || 
+                    cleanUrl.toLowerCase().endsWith('.png');
+
+      // Buat URL lengkap untuk mengakses file
+      String fullUrl = 'http://192.168.0.184:8000/storage/izin-files/$cleanUrl';
+
+      if (isImage) {
+        // Tampilkan gambar dalam dialog
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return Dialog(
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.9,
+                  maxHeight: MediaQuery.of(context).size.height * 0.7,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppBar(
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      leading: IconButton(
+                        icon: Icon(Icons.close, color: Colors.black),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                      actions: [
+                        // Tombol download
+                        IconButton(
+                          icon: Icon(Icons.download, color: Colors.black),
+                          onPressed: () async {
+                            if (await canLaunchUrl(Uri.parse(fullUrl))) {
+                              await launchUrl(Uri.parse(fullUrl));
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    Flexible(
+                      child: InteractiveViewer(
+                        panEnabled: true,
+                        boundaryMargin: EdgeInsets.all(20),
+                        minScale: 0.5,
+                        maxScale: 4,
+                        child: Image.network(
+                          fullUrl,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded / 
+                                      loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.error_outline, color: Colors.red, size: 48),
+                                  SizedBox(height: 8),
+                                  Text('Gagal memuat gambar'),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
       } else {
-        throw 'Tidak dapat membuka file';
+        // Untuk file non-gambar, buka di browser
+        if (await canLaunchUrl(Uri.parse(fullUrl))) {
+          await launchUrl(Uri.parse(fullUrl));
+        } else {
+          throw 'Tidak dapat membuka file';
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
