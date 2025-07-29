@@ -87,7 +87,7 @@ class _QRScannerPageState extends State<QRScannerPage> with SingleTickerProvider
 
       // Send request to API
       final response = await http.post(
-        Uri.parse('http://192.168.0.184:8000/api/attendance/scan-qr'),
+        Uri.parse('https://staff.wahanadata.co.id/api/attendance/scan-qr'),
         headers: {
           'Accept': 'application/json',
           'Authorization': 'Bearer $userToken',
@@ -172,7 +172,7 @@ class _QRScannerPageState extends State<QRScannerPage> with SingleTickerProvider
 
   void _triggerLocalNotification(String message, String type, String time) {
     // Implement local notification logic here
-    // You can use flutter_local_notifications package
+  
     print('Notification: $message at $time');
   }
 

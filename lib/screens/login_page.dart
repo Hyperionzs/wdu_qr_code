@@ -65,7 +65,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       try {
         // Make HTTP request to login API
         final response = await http.post(
-          Uri.parse('http://192.168.0.184:8000/api/login'), // Fixed: Use Uri.parse instead of Url.parse
+          Uri.parse('https://staff.wahanadata.co.id/api/login'), // Fixed: Use Uri.parse instead of Url.parse
           headers: {'Accept': 'application/json'},
           body: {
             'email': _usernameController.text.trim(),

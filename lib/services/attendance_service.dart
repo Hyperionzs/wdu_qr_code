@@ -4,7 +4,7 @@ import '../models/attendance_model.dart';
 import '../utils/user_data.dart';
 
 class AttendanceService {
-  static const String baseUrl = 'http://192.168.0.184:8000/api';
+  static const String baseUrl = 'https://staff.wahanadata.co.id/api';
   static const int timeoutDuration = 30; // seconds
 
   /// Mendapatkan data attendance berdasarkan bulan dan tahun
@@ -227,15 +227,15 @@ class AttendanceService {
     final formattedMonth = queryMonth.toString().padLeft(2, '0');
     final formattedYear = queryYear.toString();
 
-    // Updated to use query parameter instead of path parameter
+    
     final uri = Uri.parse('$baseUrl/permission/summary?month=$formattedMonth&year=$formattedYear');
     
     print('=== PERMISSION SUMMARY DEBUG ===');
     print('Fetching permission summary from: $uri');
     print('Token (first 20 chars): ${token.length > 20 ? token.substring(0, 20) + "..." : token}');
-    print('Month: $formattedMonth, Year: $queryYear');
+    print('Month: $formattedMonth, Year: $formattedYear');
 
-    final response = await http.get(
+    final response = await http.get(  // Changed from POST to GET
       uri,
       headers: {
         'Authorization': 'Bearer $token',

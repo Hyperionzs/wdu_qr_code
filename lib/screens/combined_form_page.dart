@@ -239,7 +239,7 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
         }
         
         // Kirim data ke API dengan endpoint yang sesuai PermissionController
-        var uri = Uri.parse('http://192.168.0.184:8000/api/permission/$_selectedFormType');
+        var uri = Uri.parse('https://staff.wahanadata.co.id/api/permission/$_selectedFormType');
         var request = http.MultipartRequest('POST', uri);
         
         // Tambahkan headers
@@ -380,7 +380,7 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
       }
 
       final response = await http.get(
-        Uri.parse('http://192.168.0.184:8000/api/permission'),
+        Uri.parse('https://staff.wahanadata.co.id/api/permission'),
         headers: {
           'Accept': 'application/json',
           'Authorization': 'Bearer $userToken',
@@ -390,7 +390,7 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
         setState(() {
-          _submissionHistory = List<Map<String, dynamic>>.from(jsonResponse['data']);
+          _submissionHistory = List<Map<String, dynamic>>.from(jsonResponse['permissions']);
         });
       } else {
         throw Exception('Gagal memuat riwayat pengajuan');
@@ -1090,16 +1090,23 @@ Widget _buildSubmissionHistory() {
   // Fungsi untuk mendownload atau membuka attachment
   Future<void> _downloadAttachment(String url) async {
     try {
-      // Hapus prefix 'izin-files/' dari url
+      // Hapus prefix 'izin-files/' dari url jika ada
       String cleanUrl = url.replaceAll('izin-files/', '');
+      print('[Download] Original URL: $url');
+      print('[Download] Cleaned URL: $cleanUrl');
       
       // Cek apakah file adalah gambar berdasarkan ekstensi
       bool isImage = cleanUrl.toLowerCase().endsWith('.jpg') || 
                     cleanUrl.toLowerCase().endsWith('.jpeg') || 
                     cleanUrl.toLowerCase().endsWith('.png');
+      print('[Download] Is image file: $isImage');
 
       // Buat URL lengkap untuk mengakses file
-      String fullUrl = 'http://192.168.0.184:8000/storage/izin-files/$cleanUrl';
+      String fullUrl = 'https://staff.wahanadata.co.id/storage/izin-files/$cleanUrl';
+      print('[Download] Full URL: $fullUrl');
+
+      final Uri uri = Uri.parse(fullUrl);
+      print('[Download] Parsed URI: $uri');
 
       if (isImage) {
         // Tampilkan gambar dalam dialog
@@ -1127,8 +1134,22 @@ Widget _buildSubmissionHistory() {
                         IconButton(
                           icon: Icon(Icons.download, color: Colors.black),
                           onPressed: () async {
-                            if (await canLaunchUrl(Uri.parse(fullUrl))) {
-                              await launchUrl(Uri.parse(fullUrl));
+                            try {
+                              print('[Download] Attempting to launch URL: $fullUrl');
+                              if (!await launchUrl(
+                                uri,
+                                mode: LaunchMode.externalApplication,
+                              )) {
+                                throw Exception('Could not launch $fullUrl');
+                              }
+                            } catch (e) {
+                              print('[Download] Error launching URL: $e');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Gagal membuka file: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
                             }
                           },
                         ),
@@ -1154,6 +1175,7 @@ Widget _buildSubmissionHistory() {
                             );
                           },
                           errorBuilder: (context, error, stackTrace) {
+                            print('[Download] Error loading image: $error');
                             return Center(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -1176,17 +1198,27 @@ Widget _buildSubmissionHistory() {
         );
       } else {
         // Untuk file non-gambar, buka di browser
-        if (await canLaunchUrl(Uri.parse(fullUrl))) {
-          await launchUrl(Uri.parse(fullUrl));
-        } else {
+        try {
+          print('[Download] Attempting to launch URL for non-image: $fullUrl');
+          if (!await launchUrl(
+            uri,
+            mode: LaunchMode.externalApplication,
+          )) {
+            throw Exception('Could not launch $fullUrl');
+          }
+        } catch (e) {
+          print('[Download] Error launching URL: $e');
           throw 'Tidak dapat membuka file';
         }
       }
     } catch (e) {
+      print('[Download] Function error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Gagal membuka file: $e'),
           backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(10),
         ),
       );
     }
