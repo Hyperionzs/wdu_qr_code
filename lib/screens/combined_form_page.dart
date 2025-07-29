@@ -40,7 +40,6 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
   // Tambahkan variabel untuk attachment
   File? _selectedFile;
   String? _fileName;
-  bool _isUploading = false;
 
   @override
   void initState() {
@@ -217,7 +216,6 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
-        _isUploading = true;
       });
       
       try {
@@ -271,7 +269,6 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
         var response = await http.Response.fromStream(streamedResponse);
 
         if (response.statusCode == 200 || response.statusCode == 201) {
-          final jsonResponse = jsonDecode(response.body);
           
           String successMessage = '';
           switch (_selectedFormType) {
@@ -333,7 +330,6 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
       } finally {
         setState(() {
           _isLoading = false;
-          _isUploading = false;
         });
       }
     }

@@ -74,7 +74,7 @@ class AttendanceService {
             throw Exception('Sesi login telah berakhir. Silakan login ulang.');
           } else {
             lastError = Exception(_getErrorMessage(response));
-            throw lastError!;
+            throw lastError;
           }
         } catch (e) {
           lastError = e is Exception ? e : Exception(e.toString());

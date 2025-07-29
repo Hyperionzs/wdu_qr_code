@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/attendance_model.dart';
-import '../services/attendance_service.dart';
 
 class AttendanceHelper {
   static String mapStatusToIndonesian(String status) {
@@ -230,7 +229,9 @@ class AttendanceHelper {
     if (data == null || data.isEmpty) return false;
     
     for (var attendance in data) {
-      
+      if (attendance.status == 'absent' || attendance.status == 'izin' || attendance.status == 'cuti') {
+        return false;
+      }
     }
     
     return true;
