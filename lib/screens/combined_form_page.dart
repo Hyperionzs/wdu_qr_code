@@ -653,7 +653,7 @@ Widget _buildSubmissionHistory() {
                   'Dibuat pada : ${_formatDateTime(submission['created_at'])}',
                   style: TextStyle(
                     fontSize: 15,
-                    color: Colors.grey.shade600,
+                    color: Colors.grey.shade700,
                   ),
                 ),
               ],
@@ -745,12 +745,17 @@ Widget _buildSubmissionHistory() {
 
   String _formatDateTime(String dateTimeStr) {
     try {
+      // Parse the UTC datetime string
       final dateTime = DateTime.parse(dateTimeStr);
-      final day = dateTime.day.toString();
-      final month = _getMonthName(dateTime.month);
-      final year = dateTime.year.toString();
-      final hour = dateTime.hour.toString().padLeft(2, '0');
-      final minute = dateTime.minute.toString().padLeft(2, '0');
+      
+      // Convert to WIB (UTC+7)
+      final wibDateTime = dateTime.add(Duration(hours: 7));
+      
+      final day = wibDateTime.day.toString();
+      final month = _getMonthName(wibDateTime.month);
+      final year = wibDateTime.year.toString();
+      final hour = wibDateTime.hour.toString().padLeft(2, '0');
+      final minute = wibDateTime.minute.toString().padLeft(2, '0');
       
       return "$day $month $year, $hour:$minute WIB";
     } catch (e) {
