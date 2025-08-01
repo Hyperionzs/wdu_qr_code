@@ -641,17 +641,27 @@ Widget _buildSubmissionHistory() {
               ),
               SizedBox(height: 12),
               Text(
-                'Tanggal: $formattedDate',
+                'Tanggal : $formattedDate',
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey.shade700,
                 ),
               ),
+              if (submission['created_at'] != null) ...[
+                SizedBox(height: 4),
+                Text(
+                  'Dibuat pada : ${_formatDateTime(submission['created_at'])}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
               SizedBox(height: 4),
               Row(
                 children: [
                   Text(
-                    'Status: ',
+                    'Status : ',
                     style: TextStyle(
                       fontSize: 15,
                       color: Colors.grey.shade700,
@@ -678,7 +688,7 @@ Widget _buildSubmissionHistory() {
               if (submission['alasan'] != null) ...[
                 SizedBox(height: 4),
                 Text(
-                  'Alasan: ${submission['alasan']}',
+                  'Alasan : ${submission['alasan']}',
                   style: TextStyle(
                     fontSize: 15,
                     color: Colors.grey.shade700,
@@ -723,8 +733,6 @@ Widget _buildSubmissionHistory() {
   );
 }
 
-// HAPUS method helper yang lama dan ganti dengan yang baru:
-// Hapus _getStatusColor() dan _getStatusIcon() method yang lama
 
   // Helper untuk mendapatkan nama bulan
   String _getMonthName(int month) {
@@ -733,6 +741,22 @@ Widget _buildSubmissionHistory() {
       'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
     ];
     return months[month - 1];
+  }
+
+  String _formatDateTime(String dateTimeStr) {
+    try {
+      final dateTime = DateTime.parse(dateTimeStr);
+      final day = dateTime.day.toString();
+      final month = _getMonthName(dateTime.month);
+      final year = dateTime.year.toString();
+      final hour = dateTime.hour.toString().padLeft(2, '0');
+      final minute = dateTime.minute.toString().padLeft(2, '0');
+      
+      return "$day $month $year, $hour:$minute WIB";
+    } catch (e) {
+      print('Error parsing datetime: $e');
+      return dateTimeStr;
+    }
   }
 
   // Widget untuk form izin
