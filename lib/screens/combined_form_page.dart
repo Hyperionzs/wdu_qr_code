@@ -641,7 +641,7 @@ Widget _buildSubmissionHistory() {
               ),
               SizedBox(height: 12),
               Text(
-                'Tanggal : $formattedDate',
+                'Tanggal Pengajuan : $formattedDate',
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey.shade700,
@@ -650,7 +650,7 @@ Widget _buildSubmissionHistory() {
               if (submission['created_at'] != null) ...[
                 SizedBox(height: 4),
                 Text(
-                  'Dibuat pada : ${_formatDateTime(submission['created_at'])}',
+                  'Dibuat Pada : ${_formatDateTime(submission['created_at'])}',
                   style: TextStyle(
                     fontSize: 15,
                     color: Colors.grey.shade700,
