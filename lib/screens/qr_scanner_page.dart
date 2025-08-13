@@ -170,12 +170,6 @@ class _QRScannerPageState extends State<QRScannerPage> with SingleTickerProvider
     );
   }
 
-  void _triggerLocalNotification(String message, String type, String time) {
-    // Implement local notification logic here
-  
-    print('Notification: $message at $time');
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
