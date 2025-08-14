@@ -118,9 +118,7 @@ class _QRScannerPageState extends State<QRScannerPage> with SingleTickerProvider
           final month = now.month.toString().padLeft(2, '0');
           final year = now.year.toString();
           await _attendanceService.refreshAttendanceData(month, year);
-          
-          // Optional: Trigger local notification
-          _triggerLocalNotification(message, type, time);
+        
         } else {
           _showErrorToast(jsonData['message']);
         }
