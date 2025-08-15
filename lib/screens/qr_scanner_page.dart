@@ -103,14 +103,17 @@ class _QRScannerPageState extends State<QRScannerPage> with SingleTickerProvider
         final jsonData = jsonDecode(response.body);
         if (jsonData['success']) {
           String message = jsonData['message'];
-          String type = jsonData['type'];
           String time = jsonData['time'];
           
-          _showSuccessToast(message);
+          // Format waktu agar lebih mudah dibaca
+          String formattedTime = _formatTime(time);
+          
+          // Tampilkan toast dengan waktu
+          _showSuccessToast("$message pada $formattedTime");
           
           // Update scan result display
           setState(() {
-            scanResult = "$message pada $time";
+            scanResult = "$message pada $formattedTime";
           });
           
           // Refresh attendance data
@@ -166,6 +169,25 @@ class _QRScannerPageState extends State<QRScannerPage> with SingleTickerProvider
       textColor: Colors.white,
       fontSize: 16.0,
     );
+  }
+
+  /// Format waktu dari format 24 jam ke format yang lebih mudah dibaca
+  String _formatTime(String time) {
+    try {
+      // Parse waktu dari format "HH:mm:ss" atau "HH:mm"
+      List<String> timeParts = time.split(':');
+      if (timeParts.length >= 2) {
+        int hour = int.parse(timeParts[0]);
+        int minute = int.parse(timeParts[1]);
+        
+        // Format ke "HH:mm" (24 jam)
+        return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+      }
+      return time; // Return as is jika format tidak sesuai
+    } catch (e) {
+      print('Error formatting time: $e');
+      return time; // Return as is jika ada error
+    }
   }
 
   @override
