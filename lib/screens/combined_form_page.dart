@@ -388,9 +388,35 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
-        setState(() {
-          _submissionHistory = List<Map<String, dynamic>>.from(jsonResponse['permissions']);
-        });
+        
+        // Debug: log data yang diterima dari API
+        print('[API Debug] Response status: ${response.statusCode}');
+        print('[API Debug] Raw response: ${response.body}');
+        print('[API Debug] Parsed response: $jsonResponse');
+        
+        if (jsonResponse['permissions'] != null) {
+          final permissions = List<Map<String, dynamic>>.from(jsonResponse['permissions']);
+          print('[API Debug] Number of permissions: ${permissions.length}');
+          
+          // Debug: log setiap permission untuk melihat format tanggal
+          for (int i = 0; i < permissions.length; i++) {
+            final permission = permissions[i];
+            print('[API Debug] Permission $i:');
+            print('[API Debug]   - Type: ${permission['type']}');
+            print('[API Debug]   - Tanggal: ${permission['tanggal']}');
+            print('[API Debug]   - Status: ${permission['status']}');
+            print('[API Debug]   - Created at: ${permission['created_at']}');
+          }
+          
+          setState(() {
+            _submissionHistory = permissions;
+          });
+        } else {
+          print('[API Debug] No permissions found in response');
+          setState(() {
+            _submissionHistory = [];
+          });
+        }
       } else {
         throw Exception('Gagal memuat riwayat pengajuan');
       }
@@ -536,34 +562,42 @@ Widget _buildSubmissionHistory() {
   }
 
   if (_submissionHistory.isEmpty) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return RefreshIndicator(
+      onRefresh: _loadSubmissionHistory,
+      child: ListView(
         children: [
-          Icon(
-            Icons.history,
-            size: 64,
-            color: Colors.grey,
-          ),
-          SizedBox(height: 16),
-          Text(
-            "Belum ada riwayat pengajuan",
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey.shade700,
-            ),
-          ),
-          SizedBox(height: 24),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _showHistory = false;
-                _showForm = false;
-              });
-            },
-            child: Text("Kembali"),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.blue.shade600,
+          SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.history,
+                  size: 64,
+                  color: Colors.grey,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  "Belum ada riwayat pengajuan",
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                SizedBox(height: 24),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _showHistory = false;
+                      _showForm = false;
+                    });
+                  },
+                  child: Text("Kembali"),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.blue.shade600,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -571,21 +605,18 @@ Widget _buildSubmissionHistory() {
     );
   }
 
-  return ListView.builder(
-    padding: EdgeInsets.all(16),
-    itemCount: _submissionHistory.length,
-    itemBuilder: (context, index) {
+  return RefreshIndicator(
+    onRefresh: _loadSubmissionHistory,
+    child: ListView.builder(
+      padding: EdgeInsets.all(16),
+      itemCount: _submissionHistory.length,
+      itemBuilder: (context, index) {
       final submission = _submissionHistory[index];
       
-      // Format tanggal dari string "YYYY-MM-DD" ke "DD MMMM YYYY"
+      // Format tanggal dari string "YYYY-MM-DD" ke "DD MMMM YYYY" dengan timezone WIB
       String formattedDate = 'N/A';
       if (submission['tanggal'] != null) {
-        try {
-          final date = DateTime.parse(submission['tanggal']);
-          formattedDate = "${date.day} ${_getMonthName(date.month)} ${date.year}";
-        } catch (e) {
-          print('Error parsing date: $e');
-        }
+        formattedDate = _formatSubmissionDateRobust(submission['tanggal']);
       }
 
       // FIXED: Status mapping yang benar sesuai dengan backend PHP
@@ -748,6 +779,7 @@ Widget _buildSubmissionHistory() {
         ),
       );
     },
+    ),
   );
 }
 
@@ -779,6 +811,77 @@ Widget _buildSubmissionHistory() {
     } catch (e) {
       print('Error parsing datetime: $e');
       return dateTimeStr;
+    }
+  }
+
+  // Helper function untuk format tanggal pengajuan yang lebih robust
+  String _formatSubmissionDate(String dateStr) {
+    try {
+      print('[Date Debug] Input date string: $dateStr');
+      
+      // Coba parse dengan berbagai format yang mungkin
+      DateTime date;
+      
+      if (dateStr.contains('T') || dateStr.contains('Z')) {
+        // Format ISO 8601 dengan timezone
+        date = DateTime.parse(dateStr);
+        print('[Date Debug] Parsed as ISO 8601: $date');
+      } else if (dateStr.contains('-')) {
+        // Format YYYY-MM-DD
+        date = DateTime.parse(dateStr);
+        print('[Date Debug] Parsed as YYYY-MM-DD: $date');
+      } else {
+        throw Exception('Format tanggal tidak dikenali: $dateStr');
+      }
+      
+      // Pastikan menggunakan tanggal lokal tanpa pergeseran timezone
+      final localDate = date.toLocal();
+      print('[Date Debug] Local date: $localDate');
+      
+      final formatted = "${localDate.day} ${_getMonthName(localDate.month)} ${localDate.year}";
+      print('[Date Debug] Final formatted: $formatted');
+      
+      return formatted;
+    } catch (e) {
+      print('[Date Debug] Error formatting date: $e');
+      return 'Tanggal tidak valid';
+    }
+  }
+
+  // Helper function untuk format tanggal pengajuan dengan timezone handling yang lebih baik
+  String _formatSubmissionDateRobust(String dateStr) {
+    try {
+      print('[Date Debug] Input date string: $dateStr');
+      
+      DateTime date;
+      
+      if (dateStr.contains('T') || dateStr.contains('Z')) {
+        // Format ISO 8601 dengan timezone
+        date = DateTime.parse(dateStr);
+        print('[Date Debug] Parsed as ISO 8601: $date');
+        
+        // Jika tanggal dalam UTC, konversi ke WIB (UTC+7)
+        if (date.isUtc) {
+          final wibDate = date.add(Duration(hours: 7));
+          print('[Date Debug] Converted to WIB: $wibDate');
+          date = wibDate;
+        }
+      } else if (dateStr.contains('-')) {
+        // Format YYYY-MM-DD - treat as local date
+        date = DateTime.parse(dateStr);
+        print('[Date Debug] Parsed as YYYY-MM-DD (local): $date');
+      } else {
+        throw Exception('Format tanggal tidak dikenali: $dateStr');
+      }
+      
+      // Gunakan tanggal yang sudah dikonversi
+      final formatted = "${date.day} ${_getMonthName(date.month)} ${date.year}";
+      print('[Date Debug] Final formatted: $formatted');
+      
+      return formatted;
+    } catch (e) {
+      print('[Date Debug] Error formatting date: $e');
+      return 'Tanggal tidak valid';
     }
   }
 
