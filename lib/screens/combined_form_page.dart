@@ -381,7 +381,10 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
           'Accept': 'application/json',
           'Authorization': 'Bearer $userToken',
         },
-      );
+      ).timeout(Duration(seconds: 10), 
+      onTimeout: () {
+        throw Exception('Koneksi timeout. Periksa koneksi internet Anda.');
+      });
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
@@ -392,10 +395,25 @@ class _CombinedFormPageState extends State<CombinedFormPage> with SingleTickerPr
         throw Exception('Gagal memuat riwayat pengajuan');
       }
     } catch (e) {
+      String errorMessage = 'Error: $e';
+      if (e.toString().contains('SocketException')) {
+        errorMessage = 'Koneksi jaringan bermasalah. Pastikan koneksi internet stabil';
+      } else if (e.toString().contains('timeout')) {
+        errorMessage = 'Request timeout. Silakan coba lagi.';
+      }
+
+      // Tampilkan pesan error di snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: $e'),
+          content: Text(errorMessage),
           backgroundColor: Colors.red,
+          duration: Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'Coba Lagi',
+            onPressed: () {
+              _loadSubmissionHistory();
+            },
+          )
         ),
       );
     } finally {
