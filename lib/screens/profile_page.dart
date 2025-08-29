@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../services/attendance_service.dart';
 import '../utils/user_data.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../utils/page_transition.dart';
@@ -13,11 +16,15 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   String _username = '';
+  String _staffLabel = '';
+  bool _isLoadingStaff = false;
+  String? _staffError;
   
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _fetchStaffLabel();
   }
   
   Future<void> _loadUserData() async {
@@ -26,6 +33,82 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() {
         _username = UserData.username;
     });
+    }
+  }
+  
+  Future<void> _fetchStaffLabel() async {
+    try {
+      setState(() {
+        _isLoadingStaff = true;
+        _staffError = null;
+      });
+
+      final token = await UserData.getToken();
+      if (token == null || token.isEmpty) {
+        throw Exception('Token tidak ditemukan');
+      }
+
+      final uri = Uri.parse('${AttendanceService.baseUrl}/staff');
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(Duration(seconds: AttendanceService.timeoutDuration));
+
+      if (response.statusCode != 200) {
+        throw Exception('HTTP ${response.statusCode}');
+      }
+
+      final dynamic decoded = json.decode(response.body);
+
+      String label;
+      if (decoded is Map<String, dynamic>) {
+        // If wrapped response
+        final success = decoded['success'];
+        final data = decoded.containsKey('data') ? decoded['data'] : decoded;
+        if (success == false) {
+          label = decoded['message']?.toString() ?? 'Gagal memuat data';
+        } else {
+          if (data is List) {
+            label = 'Jumlah staff: ${data.length}';
+          } else if (data is Map<String, dynamic>) {
+            if (data.containsKey('label')) {
+              label = data['label'].toString();
+            } else if (data.containsKey('message')) {
+              label = data['message'].toString();
+            } else {
+              label = 'Data staff tersedia';
+            }
+          } else {
+            label = 'Data staff tersedia';
+          }
+        }
+      } else if (decoded is List) {
+        label = 'Jumlah staff: ${decoded.length}';
+      } else {
+        label = decoded.toString();
+      }
+
+      if (mounted) {
+        setState(() {
+          _staffLabel = label;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _staffError = e.toString();
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingStaff = false;
+        });
+      }
     }
   }
   
@@ -156,6 +239,29 @@ class _ProfilePageState extends State<ProfilePage> {
                         color: Colors.blue.shade900,
                       ),
                     ),
+                    SizedBox(height: 8),
+                    if (_isLoadingStaff)
+                      SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    else if (_staffError != null)
+                      Text(
+                        _staffError!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.redAccent,
+                        ),
+                      )
+                    else if (_staffLabel.isNotEmpty)
+                      Text(
+                        _staffLabel,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.blueGrey,
+                        ),
+                      ),
       ],
     );
   }
