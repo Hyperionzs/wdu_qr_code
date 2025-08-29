@@ -112,7 +112,7 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> with Widg
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       title: Text(
-        'Riwayat Absensi',
+        'Riwayat Presensi',
         style: TextStyle(
           fontFamily: 'Poppins',
           fontWeight: FontWeight.w600,

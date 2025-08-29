@@ -181,7 +181,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             Divider(),
             _buildInfoTile(
               icon: Icons.history,
-              title: 'Riwayat Absensi',
+              title: 'Riwayat Presensi',
               subtitle: 'Lihat riwayat kehadiran Anda',
                               onTap: _showAttendanceHistory,
                             ),

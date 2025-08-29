@@ -127,7 +127,7 @@ class _QRScannerPageState extends State<QRScannerPage> with SingleTickerProvider
         }
       } else {
         final errorData = jsonDecode(response.body);
-        _showErrorToast(errorData['message'] ?? 'Gagal melakukan absensi');
+        _showErrorToast(errorData['message'] ?? 'Gagal melakukan presensi');
       }
     } catch (e) {
       print('Error processing QR: $e');
@@ -195,7 +195,7 @@ class _QRScannerPageState extends State<QRScannerPage> with SingleTickerProvider
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Scan QR Absensi',
+          'Scan QR Presensi',
           style: TextStyle(
             fontFamily: 'Poppins',
             fontWeight: FontWeight.w600,
