@@ -73,21 +73,41 @@ class _ProfilePageState extends State<ProfilePage> {
           label = decoded['message']?.toString() ?? 'Gagal memuat data';
         } else {
           if (data is List) {
-            label = 'Jumlah staff: ${data.length}';
+            if (data.isNotEmpty && data.first is Map<String, dynamic>) {
+              final first = data.first as Map<String, dynamic>;
+              final team = (first['team'] ?? '-').toString();
+              final position = (first['position'] ?? '-').toString();
+              label = 'Team: $team • Posisi: $position';
+            } else {
+              label = 'Jumlah staff: ${data.length}';
+            }
           } else if (data is Map<String, dynamic>) {
             if (data.containsKey('label')) {
               label = data['label'].toString();
             } else if (data.containsKey('message')) {
               label = data['message'].toString();
             } else {
-              label = 'Data staff tersedia';
+              final team = (data['team'] ?? '-').toString();
+              final position = (data['position'] ?? '-').toString();
+              if (team != '-' || position != '-') {
+                label = 'Team: $team • Posisi: $position';
+              } else {
+                label = 'Data staff tersedia';
+              }
             }
           } else {
             label = 'Data staff tersedia';
           }
         }
       } else if (decoded is List) {
-        label = 'Jumlah staff: ${decoded.length}';
+        if (decoded.isNotEmpty && decoded.first is Map<String, dynamic>) {
+          final first = decoded.first as Map<String, dynamic>;
+          final team = (first['team'] ?? '-').toString();
+          final position = (first['position'] ?? '-').toString();
+          label = 'Team: $team • Posisi: $position';
+        } else {
+          label = 'Jumlah staff: ${decoded.length}';
+        }
       } else {
         label = decoded.toString();
       }
