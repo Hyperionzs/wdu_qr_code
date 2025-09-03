@@ -58,7 +58,14 @@ class _ProfilePageState extends State<ProfilePage> {
         },
       ).timeout(Duration(seconds: AttendanceService.timeoutDuration));
 
-      if (response.statusCode != 200) {
+      if (response.statusCode == 404) {
+        if (mounted) {
+          setState(() {
+            _staffLabel = 'Data staff tidak ditemukan';
+          });
+        }
+        return;
+      } else if (response.statusCode != 200) {
         throw Exception('HTTP ${response.statusCode}');
       }
 
