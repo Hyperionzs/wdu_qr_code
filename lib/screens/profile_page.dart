@@ -6,6 +6,7 @@ import '../utils/user_data.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../utils/page_transition.dart';
 import 'attendance_history_page.dart';
+import 'settings_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -168,6 +169,15 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  void _showSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SettingsPage(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -323,10 +333,8 @@ class _ProfilePageState extends State<ProfilePage> {
               icon: Icons.settings,
               title: 'Pengaturan',
               subtitle: 'Ubah pengaturan aplikasi',
-                              onTap: () {
-                // TODO: Implementasi untuk pengaturan
-                              },
-                            ),
+              onTap: _showSettings,
+            ),
                           ],
                         ),
                       ),

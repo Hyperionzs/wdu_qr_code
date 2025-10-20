@@ -118,10 +118,10 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> with Widg
           fontWeight: FontWeight.w600,
           fontSize: 20,
           letterSpacing: 0.5,
-          color: Colors.white,
+           color: Colors.black,
         ),
       ),
-      backgroundColor: Colors.blue.shade600,
+      backgroundColor: Colors.white,
       elevation: 0,
       centerTitle: true,
       leading: IconButton(
