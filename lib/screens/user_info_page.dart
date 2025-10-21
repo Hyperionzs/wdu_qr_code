@@ -262,12 +262,6 @@ class _UserInfoPageState extends State<UserInfoPage> {
           icon: Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.edit, color: Colors.blue.shade600),
-            onPressed: _showEditProfileDialog,
-          ),
-        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -300,8 +294,6 @@ class _UserInfoPageState extends State<UserInfoPage> {
                             _buildWorkInfoCard(),
                             SizedBox(height: 16),
                             _buildAccountInfoCard(),
-                            SizedBox(height: 16),
-                            _buildActionButtons(),
                             SizedBox(height: 40),
                           ],
                         ),
@@ -356,55 +348,128 @@ class _UserInfoPageState extends State<UserInfoPage> {
   }
 
   Widget _buildProfileHeader() {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.blue.shade600,
+            Colors.blue.shade800,
+            Colors.indigo.shade700,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.shade200,
+            blurRadius: 15,
+            offset: Offset(0, 8),
+            spreadRadius: 2,
+          ),
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
-            CircleAvatar(
-              radius: 40,
-              backgroundColor: Colors.blue.shade100,
-              child: Icon(
-                Icons.person,
-                size: 50,
-                color: Colors.blue.shade600,
+            // Profile Avatar
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white,
+                  width: 3,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: CircleAvatar(
+                radius: 45,
+                backgroundColor: Colors.white,
+                child: Icon(
+                  Icons.person,
+                  size: 55,
+                  color: Colors.blue.shade600,
+                ),
               ),
             ),
             SizedBox(height: 16),
+            
+            // Name
             Text(
               _fullName.isNotEmpty ? _fullName : _username,
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue.shade900,
+                color: Colors.white,
+                letterSpacing: 0.3,
               ),
+              textAlign: TextAlign.center,
             ),
-            SizedBox(height: 8),
+            SizedBox(height: 6),
+            
+            // Position
             Text(
               _position.isNotEmpty ? _position : 'Staff',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.blueGrey.shade600,
+                color: Colors.white.withOpacity(0.9),
+                fontWeight: FontWeight.w500,
               ),
+              textAlign: TextAlign.center,
             ),
             SizedBox(height: 4),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: _status == 'Aktif' ? Colors.green.shade100 : Colors.orange.shade100,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                _status,
+            
+            // Department/Team info
+            if (_department.isNotEmpty || _team.isNotEmpty)
+              Text(
+                '${_department.isNotEmpty ? _department : ''}${_department.isNotEmpty && _team.isNotEmpty ? ' • ' : ''}${_team.isNotEmpty ? _team : ''}',
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: _status == 'Aktif' ? Colors.green.shade700 : Colors.orange.shade700,
+                  fontSize: 13,
+                  color: Colors.white.withOpacity(0.8),
+                  fontWeight: FontWeight.w400,
                 ),
+                textAlign: TextAlign.center,
+              ),
+            SizedBox(height: 12),
+            
+            // Status badge
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: _status == 'Aktif' 
+                    ? Colors.green.shade400.withOpacity(0.9)
+                    : Colors.orange.shade400.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _status == 'Aktif' ? Icons.check_circle : Icons.schedule,
+                    size: 14,
+                    color: Colors.white,
+                  ),
+                  SizedBox(width: 4),
+                  Text(
+                    _status,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -441,8 +506,8 @@ class _UserInfoPageState extends State<UserInfoPage> {
             SizedBox(height: 16),
             _buildInfoRow('Nama Lengkap', _fullName.isNotEmpty ? _fullName : _username),
             _buildInfoRow('Username', _username),
-            _buildInfoRow('Email', _email.isNotEmpty ? _email : '-'),
-            _buildInfoRow('Nomor Telepon', _phoneNumber),
+            _buildInteractiveInfoRow('Email', _email, 'Tambahkan email', Icons.email_outlined),
+            _buildInteractiveInfoRow('Nomor Telepon', _phoneNumber, 'Tambahkan nomor telepon', Icons.phone_outlined),
           ],
         ),
       ),
@@ -475,11 +540,11 @@ class _UserInfoPageState extends State<UserInfoPage> {
               ],
             ),
             SizedBox(height: 16),
-            _buildInfoRow('ID Karyawan', _employeeId),
-            _buildInfoRow('Departemen', _department),
-            _buildInfoRow('Posisi', _position),
-            _buildInfoRow('Team', _team),
-            _buildInfoRow('Tanggal Bergabung', _joinDate),
+            _buildInteractiveInfoRow('ID Karyawan', _employeeId, 'ID karyawan belum tersedia', Icons.badge_outlined),
+            _buildInteractiveInfoRow('Departemen', _department, 'Departemen belum diisi', Icons.business_outlined),
+            _buildInteractiveInfoRow('Posisi', _position, 'Posisi belum diisi', Icons.work_outlined),
+            _buildInteractiveInfoRow('Team', _team, 'Team belum diisi', Icons.group_outlined),
+            _buildInteractiveInfoRow('Tanggal Bergabung', _joinDate, 'Tanggal bergabung belum tersedia', Icons.calendar_today_outlined),
             _buildInfoRow('Status', _status),
           ],
         ),
@@ -517,6 +582,25 @@ class _UserInfoPageState extends State<UserInfoPage> {
             _buildInfoRow('Terakhir Login', 'Hari ini'),
             _buildInfoRow('Tipe Akun', 'Staff'),
             _buildInfoRow('Verifikasi Email', _email.isNotEmpty ? 'Terverifikasi' : 'Belum Terverifikasi'),
+            SizedBox(height: 16),
+            Divider(),
+            SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _showChangePasswordDialog,
+                icon: Icon(Icons.lock_outline),
+                label: Text('Ubah Password'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.blue.shade600,
+                  side: BorderSide(color: Colors.blue.shade600),
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -555,67 +639,120 @@ class _UserInfoPageState extends State<UserInfoPage> {
     );
   }
 
-  Widget _buildActionButtons() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+  Widget _buildInteractiveInfoRow(String label, String value, String emptyLabel, IconData icon) {
+    final isEmpty = value.isEmpty || value == '-';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: isEmpty
+                ? GestureDetector(
+                    onTap: () => _showAddDataDialog(label, icon),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.blue.shade200,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            icon,
+                            size: 16,
+                            color: Colors.blue.shade600,
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              emptyLabel,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.blue.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Icon(
+                            Icons.add_circle_outline,
+                            size: 16,
+                            color: Colors.blue.shade600,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Icon(Icons.settings_outlined, color: Colors.blue.shade600),
-                SizedBox(width: 8),
-                Text(
-                  'Aksi',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.blue.shade800,
-                  ),
+    );
+  }
+
+  void _showAddDataDialog(String fieldName, IconData icon) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(icon, color: Colors.blue.shade600),
+              SizedBox(width: 8),
+              Text('Tambah $fieldName'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                decoration: InputDecoration(
+                  labelText: fieldName,
+                  hintText: 'Masukkan $fieldName',
                 ),
-              ],
-            ),
-            SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _showEditProfileDialog,
-                icon: Icon(Icons.edit),
-                label: Text('Edit Profil'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade600,
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
+                controller: TextEditingController(),
               ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Batal'),
             ),
-            SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _showChangePasswordDialog,
-                icon: Icon(Icons.lock_outline),
-                label: Text('Ubah Password'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.blue.shade600,
-                  side: BorderSide(color: Colors.blue.shade600),
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Fitur tambah $fieldName akan segera tersedia')),
+                );
+              },
+              child: Text('Simpan'),
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 }
