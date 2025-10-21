@@ -7,6 +7,7 @@ import '../widgets/bottom_nav_bar.dart';
 import '../utils/page_transition.dart';
 import 'attendance_history_page.dart';
 import 'settings_page.dart';
+import 'user_info_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -178,6 +179,15 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  void _showUserInfo() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UserInfoPage(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -317,10 +327,8 @@ class _ProfilePageState extends State<ProfilePage> {
               icon: Icons.person_outline,
               title: 'Informasi Pengguna',
               subtitle: 'Detail akun dan profil',
-                              onTap: () {
-                // TODO: Implementasi untuk melihat detail profil
-                              },
-                            ),
+              onTap: _showUserInfo,
+            ),
                             Divider(),
             _buildInfoTile(
               icon: Icons.history,

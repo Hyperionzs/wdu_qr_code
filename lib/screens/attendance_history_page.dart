@@ -137,11 +137,11 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> with Widg
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          Colors.blue.shade600,
-          Colors.blue.shade400,
-          Colors.blue.shade100,
+          Colors.white,
+          Colors.blue.shade50,
+          Colors.white,
         ],
-        stops: [0.0, 0.3, 1.0],
+        stops: [0.0, 0.2, 1.0],
       ),
     );
   }
